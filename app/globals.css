@@ -16,24 +16,28 @@
   --metallic-light: #e5e7eb;
   --metallic-dark: #777d85;
 
-  --background: #ffffff;
-  --foreground: #171717;
-  --surface: #f5f5f5;
-  --surface-secondary: #eeeeee;
+  --background: #fbfbfb;
+  --foreground: #121316;
+  --surface: #f4f5f7;
+  --surface-secondary: #ebedf0;
+  --surface-card: #ffffff;
+  --surface-hover: #f0f2f5;
 
-  --text-primary: #171717;
-  --text-secondary: #666666;
-  --text-muted: #929292;
+  --text-primary: #121316;
+  --text-secondary: #575c66;
+  --text-muted: #8c93a0;
 
-  --border: #e5e5e5;
-  --border-strong: #d1d1d1;
+  --border: #e3e6eb;
+  --border-strong: #cbd0d8;
 
-  --header-height: 88px;
+  --header-height: 80px;
   --container-width: 1280px;
 
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-soft: 0 2px 8px rgba(18, 19, 22, 0.04), 0 12px 24px rgba(18, 19, 22, 0.03);
+  --shadow-card: 0 1px 3px rgba(18, 19, 22, 0.04), 0 6px 16px rgba(18, 19, 22, 0.04);
+  --shadow-elevated: 0 16px 36px rgba(18, 19, 22, 0.08);
 
-  --transition-default: 250ms ease;
+  --transition-default: 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ==========================================
@@ -43,24 +47,28 @@
 .dark {
   color-scheme: dark;
 
-  --background: #111111;
-  --foreground: #f5f5f5;
-  --surface: #1a1a1a;
-  --surface-secondary: #242424;
+  --background: #0d0e10;
+  --foreground: #f2f3f5;
+  --surface: #141619;
+  --surface-secondary: #1a1d22;
+  --surface-card: #181b20;
+  --surface-hover: #21252b;
 
-  --text-primary: #f5f5f5;
-  --text-secondary: #b0b0b0;
-  --text-muted: #858585;
+  --text-primary: #f2f3f5;
+  --text-secondary: #9ea5b2;
+  --text-muted: #6b7280;
 
-  --border: #303030;
-  --border-strong: #444444;
+  --border: #23272e;
+  --border-strong: #333842;
 
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 /* ==========================================
    TAILWIND THEME TOKENS
-========================================== */
+========================================= */
 
 @theme inline {
   --color-brand-red: var(--brand-red);
@@ -75,6 +83,8 @@
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-surface-secondary: var(--surface-secondary);
+  --color-surface-card: var(--surface-card);
+  --color-surface-hover: var(--surface-hover);
 
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
@@ -88,27 +98,84 @@
    GLOBAL RESET
 ========================================== */
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html {
+  min-height: 100%;
   scroll-behavior: smooth;
   scroll-padding-top: var(--header-height);
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--metallic-dark) var(--surface);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
   transition:
-    background-color var(--transition-default),
-    color var(--transition-default);
+    background-color 500ms ease,
+    color 500ms ease;
 }
+
+/* ==========================================
+   CIRCULAR THEME TRANSITION
+========================================== */
+
+@keyframes theme-circle-reveal {
+  from {
+    clip-path: circle(
+      0px at var(--theme-transition-x, 50vw)
+      var(--theme-transition-y, 50vh)
+    );
+  }
+
+  to {
+    clip-path: circle(
+      var(--theme-transition-r, 150vmax) at var(--theme-transition-x, 50vw)
+      var(--theme-transition-y, 50vh)
+    );
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+  animation: theme-circle-reveal 1200ms
+    cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Prevent normal CSS transitions from competing
+   with the circular reveal animation. */
+
+.theme-transition-active,
+.theme-transition-active *,
+.theme-transition-active *::before,
+.theme-transition-active *::after {
+  transition: none !important;
+}
+
+/* ==========================================
+   FORM ELEMENTS
+========================================== */
 
 button,
 input,
@@ -180,7 +247,49 @@ p {
 }
 
 .transition-default {
-  transition: all var(--transition-default);
+  transition:
+    background-color var(--transition-default),
+    color var(--transition-default),
+    border-color var(--transition-default),
+    box-shadow var(--transition-default);
+}
+
+/* ==========================================
+   ARCHITECTURAL & BLUEPRINT UTILITIES
+========================================== */
+
+.bg-blueprint-grid {
+  background-size: 36px 36px;
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+}
+
+.bg-blueprint-grid-dense {
+  background-size: 18px 18px;
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+}
+
+.bg-drafting-dots {
+  background-size: 24px 24px;
+  background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
+}
+
+.tabular-numbers {
+  font-variant-numeric: tabular-nums;
+}
+
+.architectural-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.architectural-card:hover {
+  border-color: var(--border-strong);
 }
 
 /* ==========================================
@@ -221,6 +330,13 @@ p {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-group(root),
+  ::view-transition-image-pair(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }
 
