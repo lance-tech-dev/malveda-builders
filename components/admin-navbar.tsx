@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandLogo } from "@/components/brand-logo";
 
 const navigationItems = [
   {
@@ -95,12 +96,38 @@ function NavIcon({ name }: { name: IconName }) {
   );
 }
 
-export function AdminNavbar() {
+/**
+ * "auto" follows the screen size (icons below lg, full sidebar from lg);
+ * "expanded"/"collapsed" are explicit choices made with the arrow toggle.
+ */
+export type SidebarMode = "auto" | "expanded" | "collapsed";
+
+interface AdminNavbarProps {
+  mode: SidebarMode;
+  onToggle: () => void;
+  /** Called after choosing a destination, so an overlaid mobile sidebar can close. */
+  onNavigate: () => void;
+}
+
+export function AdminNavbar({ mode, onToggle, onNavigate }: AdminNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+
+  /** Pick classes for the current mode: [auto, expanded, collapsed]. */
+  const pick = (auto: string, expanded: string, collapsed: string) =>
+    mode === "auto" ? auto : mode === "expanded" ? expanded : collapsed;
+
+  // Icons keep a fixed position in every state; collapsing only narrows the
+  // sidebar (clipping the labels) while the labels fade, so nothing jumps.
+  const ease = "duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]";
+  const label = `whitespace-nowrap transition-opacity ${ease} ${pick(
+    "opacity-0 lg:opacity-100",
+    "opacity-100",
+    "opacity-0",
+  )}`;
 
   async function handleLogout() {
     if (isLoggingOut) return;
@@ -127,33 +154,48 @@ export function AdminNavbar() {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex w-16 flex-col border-r border-border bg-surface transition-colors duration-300 lg:w-64">
-      {/* Brand Header */}
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 flex flex-col overflow-x-hidden border-r border-border bg-surface transition-[width,background-color] ${ease} ${pick(
+        "w-16 lg:w-64",
+        "w-64",
+        "w-16",
+      )}`}
+    >
+      {/* Brand Header — the mark stays centred in the 64px rail. */}
       <Link
         href="/admin/dashboard"
-        aria-label="Malveda Builders Operations"
-        className="flex h-20 shrink-0 items-center justify-center gap-3.5 border-b border-border px-4 transition-colors hover:bg-surface-hover lg:justify-start lg:px-6"
+        onClick={onNavigate}
+        aria-label="Malveda Operations dashboard"
+        className="flex h-20 shrink-0 items-center border-b border-border px-3 transition-colors hover:bg-surface-hover"
       >
-        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-red font-black text-white shadow-sm ring-1 ring-black/10">
-          <span className="text-base tracking-wider">M</span>
-          <span className="absolute -bottom-1 -right-1 h-2 w-2 rounded-full border-2 border-surface bg-emerald-500" />
-        </div>
-
-        <div className="hidden leading-tight lg:block">
-          <span className="block text-sm font-extrabold tracking-[0.18em] text-text-primary">
-            MALVEDA
-          </span>
-          <span className="mt-0.5 block text-[9px] font-semibold tracking-[0.26em] text-text-muted">
-            OPERATIONS
-          </span>
-        </div>
+        <BrandLogo tagline="Operations" className="shrink-0" textClassName={label} />
       </Link>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-2 py-6 lg:px-4">
-        <div className="mb-3 hidden items-center justify-between px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted lg:flex">
-          <span>Main Console</span>
-          <span className="h-1 w-1 rounded-full bg-border-strong" />
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-6">
+        {/* Section label + collapse/expand arrow */}
+        <div className="mb-3 flex h-8 items-center">
+          {/* Padding lives on the inner span so the label can shrink to 0 in the rail. */}
+          <span className={`min-w-0 flex-1 overflow-hidden text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted ${label}`}>
+            <span className="pl-2.5">Main Console</span>
+          </span>
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label="Collapse or expand sidebar"
+            title="Collapse or expand sidebar"
+            className="mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-text-secondary transition-colors hover:border-brand-red hover:text-brand-red"
+          >
+            {/* Points left (collapse) when expanded, right (expand) when collapsed. */}
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              className={`h-4 w-4 transition-transform ${ease} ${pick("rotate-180 lg:rotate-0", "", "rotate-180")}`}
+              aria-hidden="true"
+            >
+              <path d="M13 8H3M7 4 3 8l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
 
         <nav aria-label="Admin navigation" className="flex flex-col gap-1.5">
@@ -163,7 +205,7 @@ export function AdminNavbar() {
               (item.href !== "/admin/dashboard" &&
                 pathname.startsWith(`${item.href}/`));
 
-            const baseClasses = `relative flex h-11 items-center justify-center gap-3 rounded-lg px-3 transition-all duration-200 lg:justify-start ${
+            const baseClasses = `relative flex h-11 items-center gap-3 rounded-lg px-2.5 transition-colors duration-200 ${
               active
                 ? "bg-brand-red/10 font-semibold text-brand-red shadow-xs"
                 : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
@@ -173,6 +215,7 @@ export function AdminNavbar() {
               <Link
                 key={item.label}
                 href={item.href}
+                onClick={onNavigate}
                 title={item.label}
                 aria-current={active ? "page" : undefined}
                 className={baseClasses}
@@ -183,12 +226,10 @@ export function AdminNavbar() {
 
                 <NavIcon name={item.icon} />
 
-                <span className="hidden flex-1 text-sm lg:block">
-                  {item.label}
-                </span>
+                <span className={`flex-1 text-sm ${label}`}>{item.label}</span>
 
                 {active && (
-                  <span className="hidden h-1.5 w-1.5 rounded-full bg-brand-red lg:block" />
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full bg-brand-red ${label}`} />
                 )}
               </Link>
             );
@@ -197,12 +238,9 @@ export function AdminNavbar() {
       </div>
 
       {/* Bottom Controls */}
-      <div className="shrink-0 space-y-2.5 border-t border-border p-3 lg:p-4">
+      <div className="shrink-0 space-y-2.5 overflow-x-hidden border-t border-border p-3">
         {logoutError && (
-          <p
-            role="alert"
-            className="hidden text-xs text-brand-red lg:block"
-          >
+          <p role="alert" className={`text-xs text-brand-red ${label}`}>
             {logoutError}
           </p>
         )}
@@ -213,7 +251,7 @@ export function AdminNavbar() {
           target="_blank"
           rel="noopener noreferrer"
           title="View Public Website"
-          className="flex h-9 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-2.5 text-xs font-medium text-text-secondary transition-colors hover:border-border hover:bg-surface-hover hover:text-text-primary lg:justify-start"
+          className="flex h-9 w-full items-center gap-2.5 rounded-lg border border-transparent px-3 text-xs font-medium text-text-secondary transition-colors hover:border-border hover:bg-surface-hover hover:text-text-primary"
         >
           <svg
             viewBox="0 0 24 24"
@@ -226,23 +264,23 @@ export function AdminNavbar() {
             <circle cx="12" cy="12" r="10" />
             <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20" />
           </svg>
-          <span className="hidden flex-1 lg:block">Public Site</span>
+          <span className={`flex-1 ${label}`}>Public Site</span>
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.7"
-            className="hidden h-3.5 w-3.5 text-text-muted lg:block"
+            className={`h-3.5 w-3.5 shrink-0 text-text-muted ${label}`}
             aria-hidden="true"
           >
             <path d="M7 17L17 7M7 7h10v10" />
           </svg>
         </Link>
 
-        {/* Appearance Mode */}
-        <div className="flex items-center justify-center gap-3 rounded-lg border border-border/60 bg-surface-secondary/40 p-1.5 lg:justify-between lg:px-3">
-          <span className="hidden text-xs font-medium text-text-secondary lg:block">
-            Appearance
+        {/* Appearance Mode — the toggle fills the rail exactly when collapsed. */}
+        <div className="flex items-center">
+          <span className={`min-w-0 flex-1 overflow-hidden text-xs font-medium text-text-secondary ${label}`}>
+            <span className="pl-3">Appearance</span>
           </span>
           <ThemeToggle />
         </div>
@@ -254,10 +292,10 @@ export function AdminNavbar() {
           disabled={isLoggingOut}
           title="Sign Out"
           aria-label="Sign Out"
-          className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface-card text-text-secondary transition-all hover:border-brand-red/50 hover:bg-brand-red/5 hover:text-brand-red disabled:opacity-50 lg:justify-start lg:px-3"
+          className="flex h-10 w-full items-center gap-2.5 rounded-lg border border-border bg-surface-card px-2.5 text-text-secondary transition-colors hover:border-brand-red/50 hover:bg-brand-red/5 hover:text-brand-red disabled:opacity-50"
         >
           <NavIcon name="logout" />
-          <span className="hidden text-sm font-medium lg:block">
+          <span className={`text-sm font-medium ${label}`}>
             {isLoggingOut ? "Signing out..." : "Sign Out"}
           </span>
         </button>
