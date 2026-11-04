@@ -7,6 +7,18 @@ export const APP_ROLES = ["owner", "admin", "editor"] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
 
+// Only these roles may access the admin area.
+export const ADMIN_ROLES = ["owner", "admin"] as const satisfies readonly AppRole[];
+
+export type AdminRole = (typeof ADMIN_ROLES)[number];
+
+export function isAdminRole(role: AppRole | null | undefined): role is AdminRole {
+  return !!role && (ADMIN_ROLES as readonly AppRole[]).includes(role);
+}
+
+export const LOGIN_PATH = "/login";
+export const ACCESS_RESTRICTED_PATH = `${LOGIN_PATH}?error=access-restricted`;
+
 export async function getCurrentUserRole() {
   const supabase = await createClient();
 
@@ -48,8 +60,13 @@ export async function requireDashboardAccess() {
   const access = await getCurrentUserRole();
 
   if (!access) {
-    redirect("/admin/login");
+    redirect(LOGIN_PATH);
   }
 
-  return access;
+  // Authenticated, but not authorized for the admin area (e.g. editor).
+  if (!isAdminRole(access.role)) {
+    redirect(ACCESS_RESTRICTED_PATH);
+  }
+
+  return { user: access.user, role: access.role as AdminRole };
 }
