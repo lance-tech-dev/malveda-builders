@@ -1,5 +1,6 @@
 
 import type { Metadata } from "next";
+import PublicNavbar from "@/components/public-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <PublicNavbar />
+        {children}
+      </body>
     </html>
   );
 }
