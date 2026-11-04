@@ -8,22 +8,12 @@ import {
 
 async function ProjectsContent() {
   await connection();
-  const { user, role } = await requireDashboardAccess();
+  await requireDashboardAccess();
 
   return (
     <AdminDevelopmentState
       moduleKey="PROJECTS"
       title="Projects Management"
-      description="Manage construction projects, project information, progress, schedules, and project documentation."
-      developmentNotice="The Projects Management module is currently under development. Detailed specifications, database schemas, and workflows are being structured prior to implementing active management features."
-      plannedCapabilities={[
-        "Project records and information",
-        "Project progress tracking",
-        "Schedules and timeline management",
-        "Project documentation storage",
-      ]}
-      userEmail={user.email}
-      userRole={role}
       iconName="projects"
     />
   );
@@ -31,7 +21,7 @@ async function ProjectsContent() {
 
 export default function AdminProjectsPage() {
   return (
-    <main className="ml-16 min-h-screen bg-background text-foreground transition-colors duration-300 lg:ml-64">
+    <main className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Suspense fallback={<AdminDevelopmentSkeleton title="Projects Management" />}>
         <ProjectsContent />
       </Suspense>

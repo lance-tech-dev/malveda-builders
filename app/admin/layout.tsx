@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AdminNavbar } from "@/components/admin-navbar";
+import { AdminShell } from "@/components/admin-shell";
 
 export default function AdminLayout({
   children,
@@ -8,8 +8,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <AdminNavbar />
-      {children}
+      <AdminShell>{children}</AdminShell>
     </div>
   );
 }
